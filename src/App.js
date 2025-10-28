@@ -113,7 +113,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🚀 Item Manager</h1>
+        <h1>🚀 Item Manager 1</h1>
         <p>FastAPI + React + AWS</p>
       </header>
 

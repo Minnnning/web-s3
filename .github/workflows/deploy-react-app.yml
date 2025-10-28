@@ -1,0 +1,71 @@
+name: Deploy React App to S3 and CloudFront
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Node.js 환경 설정
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. node_modules 캐싱
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          # package-lock.json 파일이 변경될 때만 캐시를 새로 생성합니다.
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 4. 의존성 설치
+      - name: Install dependencies
+        run: npm ci
+
+      # 5. AWS 자격 증명 설정 (OIDC 사용)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::286387522454:role/kmj-web-GitHubActions-Role
+          aws-region: ap-northeast-2
+
+      # 6. AWS SSM Parameter Store에서 환경 변수 로드
+      - name: Get Parameters from AWS Parameter Store
+        uses: dkershner6/aws-ssm-getparameters-action@v2
+        with:
+          parameterPairs: |
+            /kmj-web/prod/CLOUDFRONT_ID = CLOUDFRONT_ID,
+            /kmj-web/prod/S3_BUCKET = S3_BUCKET,
+            /kmj-web/prod/REACT_APP_API_URL = REACT_APP_API_URL,
+          withDecryption: false
+
+      # 7. 리액트 앱 빌드
+      - name: Build React App
+        run: npm run build
+
+      # 8. S3에 배포 (buildspec의 post_build 1번째)
+      - name: Deploy to S3
+        run: |
+          aws s3 sync build/ s3://${{ env.S3_BUCKET }}/ --delete
+
+      # 9. CloudFront 캐시 무효화
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*" || echo "CloudFront invalidation skipped"
