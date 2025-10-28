@@ -37,7 +37,7 @@ jobs:
 
       # 4. 의존성 설치
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       # 5. AWS 자격 증명 설정 (OIDC 사용)
       - name: Configure AWS Credentials
