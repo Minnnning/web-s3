@@ -53,7 +53,7 @@ jobs:
           parameterPairs: |
             /kmj-web/prod/CLOUDFRONT_ID = CLOUDFRONT_ID,
             /kmj-web/prod/S3_BUCKET = S3_BUCKET,
-            /kmj-web/prod/REACT_APP_API_URL = REACT_APP_API_URL,
+            /kmj-web/prod/REACT_APP_API_URL = REACT_APP_API_URL
           withDecryption: false
 
       # 7. 리액트 앱 빌드
